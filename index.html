@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dr. R</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FBBF24">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #FAFAFA; color: #1F2937; font-size: 15px; line-height: 1.5; padding-bottom: 80px; }
+    
+    /* Layout Scaffolding */
+    .app-header { position: sticky; top: 0; background: rgba(250, 250, 250, 0.9); backdrop-filter: blur(10px); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    .app-title { font-size: 20px; font-weight: 700; color: #FBBF24; }
+    .offline-badge { font-size: 12px; background: #EF4444; color: #FFF; padding: 2px 8px; border-radius: 12px; display: none; }
+    
+    .container { padding: 0 24px; }
+    .tab-content { display: none; opacity: 0; transition: opacity 0.2s ease-in-out; }
+    .tab-content.active { display: block; opacity: 1; }
+    
+    /* Card UI */
+    .card { background: #FFFFFF; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .card-title { font-size: 12px; color: #9CA3AF; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+    
+    /* Typography & Display */
+    .num-hero { font-size: 32px; font-weight: 700; }
+    .num-pos { color: #22C55E; }
+    .num-neg { color: #EF4444; }
+    .sub-text { font-size: 12px; color: #9CA3AF; }
+    
+    /* Button Controls */
+    .btn-group { display: flex; gap: 12px; margin-bottom: 16px; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 16px; font-size: 15px; font-weight: 600; text-align: center; cursor: pointer; transition: transform 0.1s ease; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #FBBF24; color: #FFFFFF; }
+    .btn-secondary { background: #F3F4F6; color: #374151; }
+    .btn-danger { background: #EF4444; color: #FFFFFF; }
+    .btn-filter { padding: 6px 14px; font-size: 12px; border-radius: 20px; background: #E5E7EB; color: #4B5563; border: none; }
+    .btn-filter.active { background: #FBBF24; color: #FFF; }
+
+    /* Lists Structure */
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F3F4F6; }
+    .list-item:last-child { border-bottom: none; }
+    .item-left { display: flex; align-items: center; gap: 12px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    
+    /* Tab Navigation */
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: #FFFFFF; display: flex; border-top: 1px solid #E5E7EB; z-index: 20; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; color: #9CA3AF; cursor: pointer; }
+    .nav-item.active { color: #FBBF24; font-weight: 700; }
+    .nav-indicator { width: 4px; height: 4px; background: #FBBF24; border-radius: 50%; margin-top: 4px; display: none; }
+    .nav-item.active .nav-indicator { display: block; }
+    
+    /* Floating Action Button */
+    .fab { position: fixed; bottom: 80px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: #FBBF24; color: #FFF; font-size: 28px; border: none; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(251,191,36,0.4); cursor: pointer; }
+    .fab:active { transform: scale(0.95); }
+
+    /* Modal Sheet */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 100; padding: 24px; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #FFF; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .modal-header { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { font-size: 12px; color: #9CA3AF; margin-bottom: 4px; display: block; }
+    .form-input, .form-select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #E5E7EB; font-size: 15px; outline: none; }
+    
+    /* Category Grid */
+    .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+    .color-chip { padding: 8px; border-radius: 8px; text-align: center; font-size: 12px; cursor: pointer; border: 1px solid #E5E7EB; }
+    .color-chip.selected { border: 2px solid #FBBF24; font-weight: 700; }
+
+    /* Fullscreen Split Page */
+    .fullscreen-page { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #FAFAFA; z-index: 50; display: none; flex-direction: column; }
+    .fullscreen-page.active { display: flex; }
+    
+    /* Progress Bar */
+    .progress-bg { width: 100%; height: 6px; background: #E5E7EB; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: #FBBF24; transition: width 0.3s ease; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-title">Dr. R</div>
+    <div id="offline-badge" class="offline-badge">離線模式</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- Tab 1: Overview -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="card">
+        <div class="card-title">本月結餘</div>
+        <div id="overview-balance" class="num-hero num-pos">HKD 0</div>
+        <div style="display: flex; gap: 16px; margin-top: 8px;">
+          <span class="sub-text">收入 <span id="overview-income" style="color:#22C55E">0</span></span>
+          <span class="sub-text">支出 <span id="overview-expense" style="color:#EF4444">0</span></span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="openModal('modal-transaction')">記帳</button>
+        <button class="btn btn-secondary" onclick="openSplitPage()">拆帳</button>
+        <button class="btn btn-secondary" onclick="openModal('modal-transaction', 'transfer')">轉帳</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">今日待辦</div>
+        <div id="overview-todos"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">最近交易</div>
+        <div id="overview-transactions"></div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Details -->
+    <div id="tab-details" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <button class="btn-filter" onclick="changeMonth(-1)">◄</button>
+        <span id="current-month-display" style="font-weight: 700;">2026年9月</span>
+        <button class="btn-filter" onclick="changeMonth(1)">►</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button class="btn-filter active" onclick="filterTransactions('all', this)">全部</button>
+        <button class="btn-filter" onclick="filterTransactions('expense', this)">支出</button>
+        <button class="btn-filter" onclick="filterTransactions('income', this)">收入</button>
+        <button class="btn-filter" onclick="filterTransactions('transfer', this)">轉帳</button>
+      </div>
+
+      <div id="details-list"></div>
+      <button class="fab" onclick="openModal('modal-transaction')">+</button>
+    </div>
+
+    <!-- Tab 3: Tasks -->
+    <div id="tab-tasks" class="tab-content">
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button class="btn-filter active" onclick="switchTaskSubTab('todo', this)">待辦</button>
+        <button class="btn-filter" onclick="switchTaskSubTab('habit', this)">習慣</button>
+        <button class="btn-filter" onclick="switchTaskSubTab('countdown', this)">倒數</button>
+      </div>
+
+      <div id="task-sub-todo">
+        <div class="card">
+          <div class="card-title">進行中</div>
+          <div id="todo-active-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">已完成</div>
+          <div id="todo-completed-list"></div>
+        </div>
+      </div>
+
+      <div id="task-sub-habit" style="display: none;">
+        <div id="habit-list"></div>
+      </div>
+
+      <div id="task-sub-countdown" style="display: none;">
+        <div class="card">
+          <div class="card-title">進行中</div>
+          <div id="countdown-active-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">已結束</div>
+          <div id="countdown-ended-list"></div>
+        </div>
+      </div>
+
+      <button class="fab" onclick="openTaskModal()">+</button>
+    </div>
+
+    <!-- Tab 4: Tools -->
+    <div id="tab-tools" class="tab-content">
+      <div class="card">
+        <div class="card-title">帳本管理</div>
+        <div id="tools-ledgers"></div>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="openModal('modal-ledger')">新增帳本</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">帳戶管理</div>
+        <div id="tools-accounts"></div>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="openModal('modal-account')">新增帳戶</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">類別管理</div>
+        <div id="tools-categories" class="color-grid"></div>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 12px;" onclick="openModal('modal-category')">新增類別</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">資料同步與備份</div>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 8px;" onclick="syncToCloud()">同步到雲端</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="exportData()">匯出備份</button>
+          <button class="btn btn-secondary" onclick="importData()">匯入備份</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Fullscreen Page: Split Expense -->
+  <div id="page-split" class="fullscreen-page">
+    <div class="app-header">
+      <button class="btn-filter" onclick="closeSplitPage()">◄ 返回</button>
+      <div class="app-title" style="color: #1F2937; font-size: 15px;">拆帳工具</div>
+      <div style="width: 40px;"></div>
+    </div>
+    <div class="container" style="flex: 1; overflow-y: auto; padding-top: 12px;">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">群組</label>
+          <select id="split-group-select" class="form-select" onchange="renderSplitView()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">本人身份</label>
+          <select id="split-user-select" class="form-select" onchange="renderSplitView()"></select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">結算方案</div>
+        <div id="split-settlement-plan"></div>
+        <div class="btn-group" style="margin-top: 12px;">
+          <button class="btn btn-primary" onclick="settleAllSplits()">全部結清</button>
+          <button class="btn btn-secondary" onclick="settleMySplits()">我的部分入帳</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">成員餘額</div>
+        <div id="split-members-balance"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">費用記錄</div>
+        <div id="split-expenses-list"></div>
+      </div>
+    </div>
+    <button class="fab" onclick="openModal('modal-split-expense')">+</button>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="nav-bar">
+    <div class="nav-item active" onclick="switchTab('overview', this)">
+      總覽
+      <div class="nav-indicator"></div>
+    </div>
+    <div class="nav-item" onclick="switchTab('details', this)">
+      明細
+      <div class="nav-indicator"></div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tasks', this)">
+      任務
+      <div class="nav-indicator"></div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tools', this)">
+      工具
+      <div class="nav-indicator"></div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="modal-transaction" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增交易</div>
+      <div class="form-group">
+        <label class="form-label">交易類型</label>
+        <select id="tx-type" class="form-select" onchange="renderCategoryGrid()">
+          <option value="expense">支出</option>
+          <option value="income">收入</option>
+          <option value="transfer">轉帳</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">金額 (HKD)</label>
+        <input type="number" id="tx-amount" class="form-input" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">類別</label>
+        <div id="tx-category-grid" class="color-grid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">帳戶</label>
+        <select id="tx-account" class="form-select"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input type="date" id="tx-date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">備註</label>
+        <input type="text" id="tx-note" class="form-input" placeholder="選填">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-transaction')">取消</button>
+        <button class="btn btn-primary" onclick="saveTransaction()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-split-expense" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增拆帳費用</div>
+      <div class="form-group">
+        <label class="form-label">費用說明</label>
+        <input type="text" id="se-desc" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">金額</label>
+        <input type="number" id="se-amount" class="form-input" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">服務費</label>
+        <select id="se-service-rate" class="form-select">
+          <option value="0">0%</option>
+          <option value="0.1">10%</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">付款人</label>
+        <select id="se-payer" class="form-select"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input type="date" id="se-date" class="form-input">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-split-expense')">取消</button>
+        <button class="btn btn-primary" onclick="saveSplitExpense()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-todo" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增待辦</div>
+      <div class="form-group">
+        <label class="form-label">任務標題</label>
+        <input type="text" id="todo-title" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">優先級</label>
+        <select id="todo-priority" class="form-select">
+          <option value="high">高 (紅色)</option>
+          <option value="medium">中 (琥珀色)</option>
+          <option value="low">低 (灰色)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">截止日期時間</label>
+        <input type="datetime-local" id="todo-due" class="form-input">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-todo')">取消</button>
+        <button class="btn btn-primary" onclick="saveTodo()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-account" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增帳戶</div>
+      <div class="form-group">
+        <label class="form-label">名稱</label>
+        <input type="text" id="acc-name" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">初始餘額</label>
+        <input type="number" id="acc-balance" class="form-input" value="0">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-account')">取消</button>
+        <button class="btn btn-primary" onclick="saveAccount()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-ledger" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增帳本</div>
+      <div class="form-group">
+        <label class="form-label">帳本名稱</label>
+        <input type="text" id="ledger-name" class="form-input">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-ledger')">取消</button>
+        <button class="btn btn-primary" onclick="saveLedger()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-category" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">新增類別</div>
+      <div class="form-group">
+        <label class="form-label">類別名稱</label>
+        <input type="text" id="cat-label" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">類型</label>
+        <select id="cat-type" class="form-select">
+          <option value="expense">支出</option>
+          <option value="income">收入</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">顏色 Hex</label>
+        <input type="color" id="cat-color" class="form-input" value="#3B82F6">
+      </div>
+      <div class="btn-group" style="margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-category')">取消</button>
+        <button class="btn btn-primary" onclick="saveCategory()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Config GAS Web App Endpoint
+    const GAS_API_URL = https://script.google.com/macros/s/AKfycbwLRQTHZPWx3t2zG1YKWd28SkwK3xYoYFOzleAu4RRrUjlTNsLLfMbjzY6JEOiA3qxx/exec; // 部署後貼上 GAS Web App URL
+
+    // Core Colors Configuration
+    const COLOR_MAP = {
+      '餐飲': '#F97316', '交通': '#3B82F6', '購物': '#A855F7', '住屋': '#10B981',
+      '醫療': '#EC4899', '娛樂': '#6366F1', '教育': '#84CC16', '薪資': '#22C55E'
+    };
+
+    // State Store (IndexedDB/LocalStorage Base)
+    let state = {
+      transactions: [],
+      todos: [],
+      habits: [
+        { id: 'h1', name: '晨跑', goal: 3, logs: [], color: '#3B82F6' },
+        { id: 'h2', name: '閱讀 30 分鐘', goal: 5, logs: [], color: '#84CC16' }
+      ],
+      countdowns: [
+        { id: 'c1', name: '年終結算', targetDate: '2026-12-31', color: '#6366F1' }
+      ],
+      categories: [
+        { id: 'cat1', type: 'expense', label: '餐飲', color: '#F97316' },
+        { id: 'cat2', type: 'expense', label: '交通', color: '#3B82F6' },
+        { id: 'cat3', type: 'expense', label: '購物', color: '#A855F7' },
+        { id: 'cat4', type: 'expense', label: '住屋', color: '#10B981' },
+        { id: 'cat5', type: 'expense', label: '醫療', color: '#EC4899' },
+        { id: 'cat6', type: 'expense', label: '娛樂', color: '#6366F1' },
+        { id: 'cat7', type: 'expense', label: '教育', color: '#84CC16' },
+        { id: 'cat8', type: 'income', label: '薪資', color: '#22C55E' }
+      ],
+      accounts: [
+        { id: 'acc1', name: '現金', currency: 'HKD', balance: 5000, color: '#22C55E' },
+        { id: 'acc2', name: '銀行卡', currency: 'HKD', balance: 25000, color: '#3B82F6' }
+      ],
+      ledgers: [
+        { id: 'l1', name: '日常預算', currency: 'HKD', isActive: true }
+      ],
+      groups: [
+        { id: 'g1', name: '旅行拆帳隊', members: ['本人', 'Alex', 'Bob'] }
+      ],
+      splitExpenses: []
+    };
+
+    let selectedMonth = new Date();
+    let currentFilter = 'all';
+    let selectedCategory = '';
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalState();
+      initDates();
+      renderAllViews();
+      checkNetworkStatus();
+      registerSW();
+      if (navigator.onLine && GAS_API_URL !== "YOUR_GAS_WEB_APP_URL") {
+        fetchCloudData();
+      }
+    });
+
+    function registerSW() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+    }
+
+    function checkNetworkStatus() {
+      const updateOnline = () => {
+        document.getElementById('offline-badge').style.display = navigator.onLine ? 'none' : 'block';
+      };
+      window.addEventListener('online', updateOnline);
+      window.addEventListener('offline', updateOnline);
+      updateOnline();
+    }
+
+    // Local Storage Operations
+    function saveLocalState() {
+      localStorage.setItem('dr_r_state', JSON.stringify(state));
+      renderAllViews();
+    }
+
+    function loadLocalState() {
+      const data = localStorage.getItem('dr_r_state');
+      if (data) state = JSON.parse(data);
+    }
+
+    // Render Logic
+    function renderAllViews() {
+      renderOverview();
+      renderDetails();
+      renderTasks();
+      renderTools();
+    }
+
+    function renderOverview() {
+      const currentMonthStr = selectedMonth.toISOString().slice(0, 7);
+      const txs = state.transactions.filter(t => t.date.startsWith(currentMonthStr));
+      
+      let income = 0, expense = 0;
+      txs.forEach(t => {
+        if (t.type === 'income') income += Number(t.amount);
+        if (t.type === 'expense') expense += Number(t.amount);
+      });
+
+      const balance = income - expense;
+      const balEl = document.getElementById('overview-balance');
+      balEl.innerText = `HKD ${balance.toLocaleString()}`;
+      balEl.className = `num-hero ${balance >= 0 ? 'num-pos' : 'num-neg'}`;
+
+      document.getElementById('overview-income').innerText = income.toLocaleString();
+      document.getElementById('overview-expense').innerText = expense.toLocaleString();
+
+      // Render Overview Todos (Max 5 uncompleted)
+      const todosEl = document.getElementById('overview-todos');
+      const activeTodos = state.todos.filter(t => !t.done).slice(0, 5);
+      todosEl.innerHTML = activeTodos.map(t => `
+        <div class="list-item">
+          <div class="item-left">
+            <span class="dot" style="background:${t.priority === 'high' ? '#EF4444' : '#FBBF24'}"></span>
+            <span>${t.title}</span>
+          </div>
+          <span class="sub-text">${t.dueAt ? t.dueAt.replace('T', ' ') : ''}</span>
+        </div>
+      `).join('') || '<div class="sub-text">無待辦事項</div>';
+
+      // Render Recent Transactions (Max 5)
+      const recentEl = document.getElementById('overview-transactions');
+      const recentTxs = [...state.transactions].reverse().slice(0, 5);
+      recentEl.innerHTML = recentTxs.map(t => `
+        <div class="list-item">
+          <div class="item-left">
+            <span class="dot" style="background:${COLOR_MAP[t.category] || '#9CA3AF'}"></span>
+            <div>
+              <div>${t.note || t.category}</div>
+              <div class="sub-text">${t.date}</div>
+            </div>
+          </div>
+          <div style="font-weight:700; color:${t.type === 'income' ? '#22C55E' : '#EF4444'}">
+            ${t.type === 'income' ? '+' : '-'}${t.amount}
+          </div>
+        </div>
+      `).join('') || '<div class="sub-text">無交易記錄</div>';
+    }
+
+    function renderDetails() {
+      const monthStr = `${selectedMonth.getFullYear()}年${selectedMonth.getMonth() + 1}月`;
+      document.getElementById('current-month-display').innerText = monthStr;
+
+      const currentMonthKey = selectedMonth.toISOString().slice(0, 7);
+      let txs = state.transactions.filter(t => t.date.startsWith(currentMonthKey));
+
+      if (currentFilter !== 'all') {
+        txs = txs.filter(t => t.type === currentFilter);
+      }
+
+      // Group by Date
+      const groups = {};
+      txs.forEach(t => {
+        if (!groups[t.date]) groups[t.date] = [];
+        groups[t.date].push(t);
+      });
+
+      const detailsEl = document.getElementById('details-list');
+      detailsEl.innerHTML = Object.keys(groups).sort().reverse().map(date => `
+        <div class="card">
+          <div class="card-title">${date}</div>
+          ${groups[date].map(t => `
+            <div class="list-item">
+              <div class="item-left">
+                <span class="dot" style="background:${COLOR_MAP[t.category] || '#9CA3AF'}"></span>
+                <div>
+                  <div>${t.note || t.category}</div>
+                  <div class="sub-text">${t.account}</div>
+                </div>
+              </div>
+              <div style="font-weight:700; color:${t.type === 'income' ? '#22C55E' : '#EF4444'}">
+                ${t.type === 'income' ? '+' : '-'}${t.amount}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('') || '<div class="card sub-text">本月無紀錄</div>';
+    }
+
+    function renderTasks() {
+      // Todo
+      const activeTodos = state.todos.filter(t => !t.done);
+      const doneTodos = state.todos.filter(t => t.done);
+
+      document.getElementById('todo-active-list').innerHTML = activeTodos.map(t => `
+        <div class="list-item">
+          <div class="item-left" onclick="toggleTodo('${t.id}')">
+            <span class="dot" style="border:2px solid #9CA3AF; background:transparent;"></span>
+            <span>${t.title}</span>
+          </div>
+          <span class="sub-text">${t.dueAt || ''}</span>
+        </div>
+      `).join('') || '<div class="sub-text">完全搞定！</div>';
+
+      document.getElementById('todo-completed-list').innerHTML = doneTodos.map(t => `
+        <div class="list-item">
+          <div class="item-left" onclick="toggleTodo('${t.id}')">
+            <span class="dot" style="background:#9CA3AF"></span>
+            <span style="color:#9CA3AF; text-decoration:line-through;">${t.title}</span>
+          </div>
+        </div>
+      `).join('') || '<div class="sub-text">尚無已完成任務</div>';
+
+      // Habits
+      const habitEl = document.getElementById('habit-list');
+      habitEl.innerHTML = state.habits.map(h => {
+        const count = h.logs ? h.logs.length : 0;
+        const pct = Math.min((count / h.goal) * 100, 100);
+        return `
+          <div class="card" onclick="logHabit('${h.id}')">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="font-weight:700;">${h.name}</span>
+              <span class="sub-text">${count} / ${h.goal} 次</span>
+            </div>
+            <div class="progress-bg">
+              <div class="progress-fill" style="width:${pct}%; background:${h.color}"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Countdowns
+      const now = new Date();
+      document.getElementById('countdown-active-list').innerHTML = state.countdowns.map(c => {
+        const days = Math.ceil((new Date(c.targetDate) - now) / (1000 * 60 * 60 * 24));
+        return `
+          <div class="list-item">
+            <div class="item-left">
+              <span class="dot" style="background:${c.color}"></span>
+              <span>${c.name}</span>
+            </div>
+            <span class="num-hero" style="font-size:20px;">${days > 0 ? days : 0} 天</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTools() {
+      document.getElementById('tools-ledgers').innerHTML = state.ledgers.map(l => `
+        <div class="list-item">
+          <span>${l.name} (${l.currency})</span>
+          <span class="sub-text">${l.isActive ? '使用中' : ''}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('tools-accounts').innerHTML = state.accounts.map(a => `
+        <div class="list-item">
+          <span>${a.name}</span>
+          <span style="font-weight:700;">HKD ${a.balance}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('tools-categories').innerHTML = state.categories.map(c => `
+        <div class="color-chip" style="background:${c.color}20; border-color:${c.color}; color:${c.color}">
+          ${c.label}
+        </div>
+      `).join('');
+    }
+
+    // Modal & Navigation Handlers
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function openModal(id, type = 'expense') {
+      if (id === 'modal-transaction') {
+        document.getElementById('tx-type').value = type;
+        renderCategoryGrid();
+        populateAccountSelect();
+      }
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function renderCategoryGrid() {
+      const type = document.getElementById('tx-type').value;
+      const cats = state.categories.filter(c => c.type === type || type === 'transfer');
+      const grid = document.getElementById('tx-category-grid');
+      grid.innerHTML = cats.map(c => `
+        <div class="color-chip ${selectedCategory === c.label ? 'selected' : ''}" 
+             onclick="selectCategory('${c.label}', this)">
+          ${c.label}
+        </div>
+      `).join('');
+    }
+
+    function selectCategory(label, el) {
+      selectedCategory = label;
+      document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function populateAccountSelect() {
+      const sel = document.getElementById('tx-account');
+      sel.innerHTML = state.accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+    }
+
+    function initDates() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('tx-date').value = today;
+      document.getElementById('se-date').value = today;
+    }
+
+    // Action Handlers
+    function saveTransaction() {
+      const amount = document.getElementById('tx-amount').value;
+      if (!amount) return;
+      const tx = {
+        id: 'tx_' + Date.now(),
+        type: document.getElementById('tx-type').value,
+        amount: Number(amount),
+        category: selectedCategory || '其他',
+        account: document.getElementById('tx-account').value,
+        date: document.getElementById('tx-date').value,
+        note: document.getElementById('tx-note').value,
+        ledgerId: state.ledgers[0]?.id || 'l1'
+      };
+
+      // Account Balance Adjust
+      const acc = state.accounts.find(a => a.name === tx.account);
+      if (acc) {
+        if (tx.type === 'income') acc.balance += tx.amount;
+        if (tx.type === 'expense') acc.balance -= tx.amount;
+      }
+
+      state.transactions.push(tx);
+      saveLocalState();
+      closeModal('modal-transaction');
+      postToCloud('addTransaction', tx);
+    }
+
+    function saveTodo() {
+      const title = document.getElementById('todo-title').value;
+      if (!title) return;
+      const todo = {
+        id: 'td_' + Date.now(),
+        title,
+        priority: document.getElementById('todo-priority').value,
+        dueAt: document.getElementById('todo-due').value,
+        done: false,
+        createdAt: new Date().toISOString()
+      };
+      state.todos.push(todo);
+      saveLocalState();
+      closeModal('modal-todo');
+      postToCloud('addTodo', todo);
+    }
+
+    function toggleTodo(id) {
+      const t = state.todos.find(item => item.id === id);
+      if (t) {
+        t.done = !t.done;
+        saveLocalState();
+        postToCloud('toggleTodo', { id, done: t.done });
+      }
+    }
+
+    function logHabit(id) {
+      const h = state.habits.find(item => item.id === id);
+      if (h) {
+        if (!h.logs) h.logs = [];
+        h.logs.push(new Date().toISOString());
+        saveLocalState();
+        postToCloud('addHabitLog', { id, logs: h.logs });
+      }
+    }
+
+    function saveAccount() {
+      const name = document.getElementById('acc-name').value;
+      if (!name) return;
+      const acc = {
+        id: 'acc_' + Date.now(),
+        name,
+        currency: 'HKD',
+        balance: Number(document.getElementById('acc-balance').value) || 0,
+        color: '#3B82F6'
+      };
+      state.accounts.push(acc);
+      saveLocalState();
+      closeModal('modal-account');
+      postToCloud('addAccount', acc);
+    }
+
+    function saveCategory() {
+      const label = document.getElementById('cat-label').value;
+      if (!label) return;
+      const cat = {
+        id: 'cat_' + Date.now(),
+        type: document.getElementById('cat-type').value,
+        label,
+        color: document.getElementById('cat-color').value
+      };
+      state.categories.push(cat);
+      COLOR_MAP[label] = cat.color;
+      saveLocalState();
+      closeModal('modal-category');
+      postToCloud('addCategory', cat);
+    }
+
+    function saveLedger() {
+      const name = document.getElementById('ledger-name').value;
+      if (!name) return;
+      const ledger = { id: 'l_' + Date.now(), name, currency: 'HKD', isActive: false };
+      state.ledgers.push(ledger);
+      saveLocalState();
+      closeModal('modal-ledger');
+      postToCloud('addLedger', ledger);
+    }
+
+    // Split Expense Handlers
+    function openSplitPage() {
+      document.getElementById('page-split').classList.add('active');
+      const gSel = document.getElementById('split-group-select');
+      gSel.innerHTML = state.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+      renderSplitView();
+    }
+
+    function closeSplitPage() {
+      document.getElementById('page-split').classList.remove('active');
+    }
+
+    function renderSplitView() {
+      const gId = document.getElementById('split-group-select').value;
+      const group = state.groups.find(g => g.id === gId);
+      if (!group) return;
+
+      const uSel = document.getElementById('split-user-select');
+      uSel.innerHTML = group.members.map(m => `<option value="${m}">${m}</option>`).join('');
+
+      const payerSel = document.getElementById('se-payer');
+      payerSel.innerHTML = group.members.map(m => `<option value="${m}">${m}</option>`).join('');
+
+      const expenses = state.splitExpenses.filter(e => e.groupId === gId && !e.settled);
+      const balances = {};
+      group.members.forEach(m => balances[m] = 0);
+
+      expenses.forEach(e => {
+        const total = e.amount * (1 + Number(e.serviceRate || 0));
+        const perHead = total / group.members.length;
+        group.members.forEach(m => {
+          if (m === e.paidBy) balances[m] += (total - perHead);
+          else balances[m] -= perHead;
+        });
+      });
+
+      // Render Member Balances
+      document.getElementById('split-members-balance').innerHTML = Object.keys(balances).map(m => `
+        <div class="list-item">
+          <span>${m}</span>
+          <span style="font-weight:700; color:${balances[m] >= 0 ? '#22C55E' : '#EF4444'}">
+            ${balances[m] >= 0 ? '+' : ''}${balances[m].toFixed(1)}
+          </span>
+        </div>
+      `).join('');
+
+      // Simple Settlement Algorithm (Who pays whom)
+      const myName = uSel.value || group.members[0];
+      const myBal = balances[myName] || 0;
+      let planText = "";
+      if (myBal > 0) planText = `大家應付給你共 HKD ${myBal.toFixed(1)}`;
+      else if (myBal < 0) planText = `你應付給其他人共 HKD ${Math.abs(myBal).toFixed(1)}`;
+      else planText = "帳目已清，無須付款";
+      
+      document.getElementById('split-settlement-plan').innerText = planText;
+
+      // Expenses List
+      document.getElementById('split-expenses-list').innerHTML = expenses.map(e => `
+        <div class="list-item">
+          <div>
+            <div>${e.desc}</div>
+            <div class="sub-text">${e.paidBy} 付款</div>
+          </div>
+          <div style="font-weight:700;">HKD ${e.amount}</div>
+        </div>
+      `).join('') || '<div class="sub-text">尚無分帳記錄</div>';
+    }
+
+    function saveSplitExpense() {
+      const desc = document.getElementById('se-desc').value;
+      const amount = Number(document.getElementById('se-amount').value);
+      if (!desc || !amount) return;
+
+      const exp = {
+        id: 'se_' + Date.now(),
+        groupId: document.getElementById('split-group-select').value,
+        desc,
+        amount,
+        serviceRate: document.getElementById('se-service-rate').value,
+        paidBy: document.getElementById('se-payer').value,
+        date: document.getElementById('se-date').value,
+        settled: false
+      };
+
+      state.splitExpenses.push(exp);
+      saveLocalState();
+      closeModal('modal-split-expense');
+      renderSplitView();
+      postToCloud('addSplitExpense', exp);
+    }
+
+    function settleAllSplits() {
+      const gId = document.getElementById('split-group-select').value;
+      state.splitExpenses.forEach(e => {
+        if (e.groupId === gId) e.settled = true;
+      });
+      saveLocalState();
+      renderSplitView();
+    }
+
+    function settleMySplits() {
+      settleAllSplits();
+    }
+
+    function changeMonth(delta) {
+      selectedMonth.setMonth(selectedMonth.getMonth() + delta);
+      renderDetails();
+      renderOverview();
+    }
+
+    function filterTransactions(type, el) {
+      currentFilter = type;
+      document.querySelectorAll('#tab-details .btn-filter').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      renderDetails();
+    }
+
+    function switchTaskSubTab(type, el) {
+      document.getElementById('task-sub-todo').style.display = type === 'todo' ? 'block' : 'none';
+      document.getElementById('task-sub-habit').style.display = type === 'habit' ? 'block' : 'none';
+      document.getElementById('task-sub-countdown').style.display = type === 'countdown' ? 'block' : 'none';
+      
+      document.querySelectorAll('#tab-tasks .btn-filter').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function openTaskModal() {
+      openModal('modal-todo');
+    }
+
+    // Cloud Sync Operations
+    function fetchCloudData() {
+      fetch(GAS_API_URL)
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === 'success' && res.data) {
+            Object.assign(state, res.data);
+            saveLocalState();
+          }
+        }).catch(() => {});
+    }
+
+    function postToCloud(action, payload) {
+      if (!navigator.onLine || GAS_API_URL === "YOUR_GAS_WEB_APP_URL") return;
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload })
+      }).catch(() => {});
+    }
+
+    function syncToCloud() {
+      postToCloud('syncToDrive', state);
+      alert('已送出同步請求');
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `DrR_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+          state = JSON.parse(event.target.result);
+          saveLocalState();
+          alert('匯入完成！');
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+  </script>
+</body>
+</html>
